@@ -2,39 +2,49 @@ package main
 
 import (
 	"github.com/tendermint/tendermint/libs/log"
+	tmos "github.com/tendermint/tendermint/libs/os"
 	"github.com/tendermint/tendermint/p2p"
 	"github.com/terran-stakers/multiseed/internal/geoloc"
-	"github.com/terran-stakers/multiseed/internal/http"
 	"github.com/terran-stakers/multiseed/internal/seednode"
 	"os"
 	"time"
 )
 
 var (
-	logger          = log.NewTMLogger(log.NewSyncWriter(os.Stdout)).With("module", "main")
-	geolocalizedIps = new([]geoloc.GeolocalizedPeers)
+	logger = log.NewTMLogger(log.NewSyncWriter(os.Stdout)).With("module", "main")
+	ticker = time.NewTicker(5 * time.Second)
 )
 
 func main() {
-	seedConfig, nodeKey := seednode.InitConfig()
+	seedConfigs, nodeKey := seednode.InitConfigs()
+	var seedSwitchs []p2p.Switch
 
-	logger.Info("Starting Web Server...")
-	http.StartWebServer(seedConfig, geolocalizedIps)
+	//	logger.Info("Starting Web Server...")
+	//	http.StartWebServer(seedConfigs, geolocalizedIps)
 
-	logger.Info("Starting Seed Node...")
-	sw := seednode.StartSeedNode(seedConfig, nodeKey)
+	seedSwitchs = seednode.StartSeedNodes(seedConfigs, nodeKey)
 
-	StartGeolocServiceAndBlock(sw)
+	tmos.TrapSignal(logger, func() {
+		logger.Info("shutting down...")
+		ticker.Stop()
+		for _, sw := range seedSwitchs {
+			_ = sw.Stop()
+		}
+	})
+
+	StartGeolocServiceAndBlock(seedSwitchs)
 }
 
-func StartGeolocServiceAndBlock(sw *p2p.Switch) {
+func StartGeolocServiceAndBlock(seedSwitchs []p2p.Switch) {
 	// Fire periodically
-	ticker := time.NewTicker(5 * time.Second)
-
 	for {
 		select {
 		case <-ticker.C:
-			peers := seednode.GetPeers(sw.Peers().List())
+			var peersFromAllNodes []p2p.Peer
+			for _, sw := range seedSwitchs {
+				peersFromAllNodes = append(peersFromAllNodes, sw.Peers().List()...)
+			}
+			peers := seednode.GetPeers(peersFromAllNodes)
 			geoloc.ResolveIps(peers)
 		}
 	}

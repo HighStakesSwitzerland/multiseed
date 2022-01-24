@@ -1,7 +1,6 @@
 package seednode
 
 import (
-	"fmt"
 	"github.com/tendermint/tendermint/p2p"
 	"github.com/tendermint/tendermint/p2p/pex"
 )
@@ -21,12 +20,12 @@ type Peer struct {
 	according to the current connexions
 */
 func GetPeers(peers []p2p.Peer) []*Peer {
-  if len(peers) > 0 {
-    logger.Info(fmt.Sprintf("Address book contains %d new peers", len(peers)), "peers", peers)
-    peerList = p2pPeersToPeerList(peers)
-    return peerList
-  }
-  return nil
+	if len(peers) > 0 {
+		//    logger.Info(fmt.Sprintf("Address book contains %d peers", len(peers)), "peers", peers)
+		peerList = p2pPeersToPeerList(peers)
+		return peerList
+	}
+	return nil
 }
 
 func p2pPeersToPeerList(list []p2p.Peer) []*Peer {

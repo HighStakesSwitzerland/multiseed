@@ -54,10 +54,10 @@ type ipServiceResponse struct {
 	Appends the new resolved peers to the ResolvedPeers slice, so we keep the full list since the startup
 */
 func ResolveIps(peerList []*seednode.Peer) {
-  if len(peerList) > 0 {
-    ResolvedPeers = append(ResolvedPeers, resolve(getUnresolvedPeers(peerList))...)
-    logger.Info(fmt.Sprintf("We have %d total resolved peers", len(ResolvedPeers)))
-  }
+	if len(peerList) > 0 {
+		ResolvedPeers = append(ResolvedPeers, resolve(getUnresolvedPeers(peerList))...)
+		logger.Info(fmt.Sprintf("We have %d total resolved peers", len(ResolvedPeers)))
+	}
 }
 
 func resolve(peers []*seednode.Peer) []GeolocalizedPeers {
@@ -65,9 +65,9 @@ func resolve(peers []*seednode.Peer) []GeolocalizedPeers {
 	var geolocalizedPeers []GeolocalizedPeers
 	unresolvedPeers := getUnresolvedPeers(peers)
 	peersLength := len(unresolvedPeers)
-  if (peersLength > 0) {
-    logger.Info(fmt.Sprintf("There is %d new peers that need resolution", peersLength))
-  }
+	if peersLength > 0 {
+		logger.Info(fmt.Sprintf("There are %d new peers that need resolution", peersLength))
+	}
 
 	for i := 0; i < peersLength; i += chunkSize {
 		end := i + chunkSize
@@ -154,6 +154,7 @@ func getUnresolvedPeers(peers []*seednode.Peer) []*seednode.Peer {
 			peersToResolve = append(peersToResolve, peer)
 		}
 	}
+	logger.Info(fmt.Sprintf("We have %s unresolved peers", len(peersToResolve)))
 	return peersToResolve
 }
 
