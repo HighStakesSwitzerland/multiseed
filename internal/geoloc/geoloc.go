@@ -14,7 +14,7 @@ import (
 )
 
 var (
-	ResolvedPeers []GeolocalizedPeers
+	ResolvedPeers = make(map[string][]GeolocalizedPeers)
 	logger        = log.NewTMLogger(log.NewSyncWriter(os.Stdout)).With("module", "geoloc")
 	ipApiUrl      = "http://ip-api.com/batch"
 )
@@ -53,9 +53,12 @@ type ipServiceResponse struct {
 	Resolve ips using https://ip-api.com/ geolocation free service
 	Appends the new resolved peers to the ResolvedPeers slice, so we keep the full list since the startup
 */
-func ResolveIps(peerList []*seednode.Peer) {
+func ResolveIps(peerList []*seednode.Peer, chain string) {
 	if len(peerList) > 0 {
-		ResolvedPeers = append(ResolvedPeers, resolve(getUnresolvedPeers(peerList))...)
+		if peers := ResolvedPeers[chain]; peers == nil {
+			ResolvedPeers[chain] = nil
+		}
+		ResolvedPeers[chain] = append(ResolvedPeers[chain], resolve(getUnresolvedPeers(peerList, chain))...)
 		logger.Info(fmt.Sprintf("We have %d total resolved peers", len(ResolvedPeers)))
 	}
 }
@@ -63,7 +66,7 @@ func ResolveIps(peerList []*seednode.Peer) {
 func resolve(peers []*seednode.Peer) []GeolocalizedPeers {
 	chunkSize := 10
 	var geolocalizedPeers []GeolocalizedPeers
-	unresolvedPeers := getUnresolvedPeers(peers)
+	unresolvedPeers := getUnresolvedPeers(peers, "")
 	peersLength := len(unresolvedPeers)
 	if peersLength > 0 {
 		logger.Info(fmt.Sprintf("There are %d new peers that need resolution", peersLength))
@@ -146,23 +149,19 @@ func fillGeolocData(chunk []*seednode.Peer) []ipServiceResponse {
 	return response
 }
 
-func getUnresolvedPeers(peers []*seednode.Peer) []*seednode.Peer {
+func getUnresolvedPeers(peers []*seednode.Peer, chain string) []*seednode.Peer {
 	var peersToResolve []*seednode.Peer
 
 	for _, peer := range peers {
-		if !isResolved(peer) {
+		if !isResolved(peer, chain) {
 			peersToResolve = append(peersToResolve, peer)
 		}
 	}
-	logger.Info(fmt.Sprintf("We have %s unresolved peers", len(peersToResolve)))
 	return peersToResolve
 }
 
-func isResolved(peer *seednode.Peer) bool {
-	if ResolvedPeers == nil {
-		return false
-	}
-	for _, elt := range ResolvedPeers {
+func isResolved(peer *seednode.Peer, chain string) bool {
+	for _, elt := range ResolvedPeers[chain] {
 		if elt.Peer.IP == peer.IP {
 			return true
 		}

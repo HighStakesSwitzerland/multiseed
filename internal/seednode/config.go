@@ -10,26 +10,27 @@ import (
 	"github.com/tendermint/tendermint/p2p"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"text/template"
 )
 
 // TSConfig extends tendermint P2PConfig with the things we need
 type TSConfig struct {
-	Terra      P2PConfig `mapstructure:"terra"`
-	Sentinel   P2PConfig `mapstructure:"sentinel"`
-	Persitence P2PConfig `mapstructure:"persistence"`
-	Lum        P2PConfig `mapstructure:"lum"`
-	Desmos     P2PConfig `mapstructure:"desmos"`
-	Injective  P2PConfig `mapstructure:"injective"`
-	Band       P2PConfig `mapstructure:"band"`
-	Certik     P2PConfig `mapstructure:"certik"`
-	Fetchai    P2PConfig `mapstructure:"fetchai"`
-	Irisnet    P2PConfig `mapstructure:"irisnet"`
-	Sifchain   P2PConfig `mapstructure:"sifchain"`
+	Terra       P2PConfig `mapstructure:"terra"`
+	Sentinel    P2PConfig `mapstructure:"sentinel"`
+	Persistence P2PConfig `mapstructure:"persistence"`
+	Lum         P2PConfig `mapstructure:"lum"`
+	Desmos      P2PConfig `mapstructure:"desmos"`
+	Injective   P2PConfig `mapstructure:"injective"`
+	Band        P2PConfig `mapstructure:"band"`
+	Certik      P2PConfig `mapstructure:"certik"`
+	Fetchai     P2PConfig `mapstructure:"fetchai"`
+	Irisnet     P2PConfig `mapstructure:"irisnet"`
+	Sifchain    P2PConfig `mapstructure:"sifchain"`
 
 	LogLevel string `mapstructure:"log_level"`
-	HttpPort int    `mapstructure:"http_port"`
+	HttpPort string `mapstructure:"http_port"`
 }
 
 type P2PConfig struct {
@@ -50,7 +51,7 @@ func init() {
 	}
 }
 
-func InitConfigs() (TSConfig, p2p.NodeKey) {
+func InitConfigs() (*TSConfig, *p2p.NodeKey) {
 	var tsConfig TSConfig
 
 	userHomeDir, err := homedir.Dir()
@@ -91,48 +92,60 @@ func InitConfigs() (TSConfig, p2p.NodeKey) {
 
 	logger.Info("Node key for all chains: ", "nodeId", nodeKey.ID())
 
-	if tsConfig.Terra.Seeds == "" || tsConfig.Terra.ChainId == "" {
-		logger.Info("No ChainId or Seeds for config [terra]; this chain will not be used")
-		tsConfig.Terra.Enable = false
-	} else {
-		tsConfig.Terra.Enable = true
-	}
-	if tsConfig.Band.Seeds == "" || tsConfig.Band.ChainId == "" {
-		logger.Info("No ChainId or Seeds for config [band]; this chain will not be used")
-		tsConfig.Band.Enable = false
-	} else {
-		tsConfig.Band.Enable = true
+	checkActiveChains(&tsConfig)
+
+	return &tsConfig, nodeKey
+}
+
+func checkActiveChains(tsConfig *TSConfig) {
+	// get field names of the config
+	fieldNames := reflect.TypeOf(TSConfig{})
+	names := make([]string, fieldNames.NumField())
+	for i := range names {
+		names[i] = fieldNames.Field(i).Name
 	}
 
-	return tsConfig, *nodeKey
+	// for each chain, check the config is ok
+	value := reflect.Indirect(reflect.ValueOf(tsConfig))
+	for i := 0; i < len(names); i++ {
+		chain := value.FieldByName(names[i]).Interface()
+		if reflect.TypeOf(chain) == reflect.TypeOf(P2PConfig{}) {
+			chainCfg := chain.(P2PConfig)
+			if chainCfg.Seeds == "" || chainCfg.ChainId == "" {
+				logger.Info(fmt.Sprintf("%s config is incomplete, this chain will not be used", names[i]))
+			} else {
+				value.FieldByName(names[i]).FieldByName("Enable").SetBool(true)
+			}
+		}
+	}
 }
 
 func initDefaultConfig() TSConfig {
 	tsConfig := TSConfig{
-		Terra:      *defaultP2PConfig(),
-		Sentinel:   *defaultP2PConfig(),
-		Persitence: *defaultP2PConfig(),
-		Lum:        *defaultP2PConfig(),
-		Desmos:     *defaultP2PConfig(),
-		Injective:  *defaultP2PConfig(),
-		Band:       *defaultP2PConfig(),
-		Certik:     *defaultP2PConfig(),
-		Fetchai:    *defaultP2PConfig(),
-		Irisnet:    *defaultP2PConfig(),
-		Sifchain:   *defaultP2PConfig(),
-		LogLevel:   "info",
-		HttpPort:   8090,
+		Terra:       *defaultP2PConfig(0),
+		Band:        *defaultP2PConfig(1),
+		Fetchai:     *defaultP2PConfig(2),
+		Injective:   *defaultP2PConfig(3),
+		Persistence: *defaultP2PConfig(4),
+		Irisnet:     *defaultP2PConfig(5),
+		Sentinel:    *defaultP2PConfig(6),
+		Certik:      *defaultP2PConfig(7),
+		Lum:         *defaultP2PConfig(8),
+		Sifchain:    *defaultP2PConfig(9),
+		Desmos:      *defaultP2PConfig(10),
+		LogLevel:    "info",
+		HttpPort:    "8090",
 	}
 	return tsConfig
 }
 
-func defaultP2PConfig() *P2PConfig {
+func defaultP2PConfig(port int) *P2PConfig {
 	p := &P2PConfig{
 		P2PConfig: *config.DefaultP2PConfig(),
 		ChainId:   "",
 		Enable:    false,
 	}
-	p.ListenAddress = "tcp://127.0.0.1:26656"
+	p.ListenAddress = fmt.Sprintf("tcp://0.0.0.0:%d", 26656+port)
 	return p
 }
 
@@ -146,33 +159,3 @@ func writeConfigFile(configFilePath string, config *TSConfig) {
 
 	tmos.MustWriteFile(configFilePath, buffer.Bytes(), 0644)
 }
-
-const defaultConfigTemplate = `# This is a TOML config file.
-# For more information, see https://github.com/toml-lang/toml
-
-# NOTE: Any path below can be absolute (e.g. "/var/myawesomeapp/data") or
-# relative to the home directory (e.g. "data"). The home directory is
-# "$HOME/.tendermint" by default, but could be changed via $TMHOME env variable
-# or --home cmd flag.
-
-#######################################################
-###     Multiseed Server Configuration Options      ###
-#######################################################
-# Port for the frontend
-http_port = "{{ .HttpPort }}"
-
-# Output level for logging: "info" or "debug". debug will enable pex and addrbook verbose logs
-log_level = "{{ .LogLevel }}"
-
-laddr = "{{ .ListenAddress }}"
-
-# Chain specific config
-[terra]
-chain_id = "{{ .Terra.ChainId }}"
-seeds = "{{ .Terra.Seeds }}"
-
-[band]
-chain_id = "{{ .Band.ChainId }}"
-seeds = "{{ .Band.Seeds }}"
-
-`

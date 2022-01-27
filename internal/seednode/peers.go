@@ -19,7 +19,7 @@ type Peer struct {
 	Returns the current reactor peers. As in seed mode the pex module disconnects quickly, this list can grow and shrink
 	according to the current connexions
 */
-func GetPeers(peers []p2p.Peer) []*Peer {
+func ToSeednodePeers(peers []p2p.Peer) []*Peer {
 	if len(peers) > 0 {
 		//    logger.Info(fmt.Sprintf("Address book contains %d peers", len(peers)), "peers", peers)
 		peerList = p2pPeersToPeerList(peers)

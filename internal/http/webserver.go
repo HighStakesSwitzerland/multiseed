@@ -19,7 +19,7 @@ type WebResources struct {
 	Files map[string]string
 }
 
-func StartWebServer(seedConfig seednode.TSConfig, ips *[]geoloc.GeolocalizedPeers) {
+func StartWebServer(seedConfig *seednode.TSConfig) {
 	// serve endpoint
 	http.HandleFunc("/api/peers", writePeers)
 
