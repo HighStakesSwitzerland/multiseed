@@ -79,6 +79,7 @@ func InitConfigs() (*TSConfig, *p2p.NodeKey) {
 		logger.Info("No existing configuration found, generating one")
 		tsConfig = initDefaultConfig()
 		writeConfigFile(configFilePath, &tsConfig)
+		os.Exit(0)
 	} else {
 		panic(err)
 	}

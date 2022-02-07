@@ -3,6 +3,8 @@ build
 *.iml
 tmp
 package-lock.json
+multiseed.exe
+multiseed.iml
 
 # compiled output
 /dist
@@ -13,6 +15,8 @@ package-lock.json
 
 # dependencies
 /node_modules
+/pkg
+/vendor
 
 # profiling files
 chrome-profiler-events*.json
