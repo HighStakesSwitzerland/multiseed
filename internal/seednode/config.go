@@ -3,7 +3,7 @@ package seednode
 import (
 	"bytes"
 	"fmt"
-	"github.com/mitchellh/go-homedir"
+	homedir "github.com/mitchellh/go-homedir"
 	"github.com/spf13/viper"
 	"github.com/tendermint/tendermint/config"
 	tmos "github.com/tendermint/tendermint/libs/os"
@@ -18,6 +18,7 @@ import (
 // TSConfig extends tendermint P2PConfig with the things we need
 type TSConfig struct {
 	Terra       P2PConfig `mapstructure:"terra"`
+	Bombay      P2PConfig `mapstructure:"bombay"`
 	Sentinel    P2PConfig `mapstructure:"sentinel"`
 	Persistence P2PConfig `mapstructure:"persistence"`
 	Lum         P2PConfig `mapstructure:"lum"`
@@ -134,6 +135,7 @@ func initDefaultConfig() TSConfig {
 		Lum:         *defaultP2PConfig(8),
 		Sifchain:    *defaultP2PConfig(9),
 		Desmos:      *defaultP2PConfig(10),
+		Bombay:      *defaultP2PConfig(11),
 		LogLevel:    "info",
 		HttpPort:    "8090",
 	}

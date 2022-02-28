@@ -23,6 +23,11 @@ chain_id = "{{ .Terra.ChainId }}"
 seeds = "{{ .Terra.Seeds }}"
 laddr = "{{ .Terra.ListenAddress }}"
 
+[bombay]
+chain_id = "{{ .Bombay.ChainId }}"
+seeds = "{{ .Bombay.Seeds }}"
+laddr = "{{ .Bombay.ListenAddress }}"
+
 [band]
 chain_id = "{{ .Band.ChainId }}"
 seeds = "{{ .Band.Seeds }}"
