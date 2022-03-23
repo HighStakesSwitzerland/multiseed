@@ -17,18 +17,21 @@ import (
 
 // TSConfig extends tendermint P2PConfig with the things we need
 type TSConfig struct {
-	Terra       P2PConfig `mapstructure:"terra"`
-	Bombay      P2PConfig `mapstructure:"bombay"`
-	Sentinel    P2PConfig `mapstructure:"sentinel"`
-	Persistence P2PConfig `mapstructure:"persistence"`
-	Lum         P2PConfig `mapstructure:"lum"`
-	Desmos      P2PConfig `mapstructure:"desmos"`
-	Injective   P2PConfig `mapstructure:"injective"`
-	Band        P2PConfig `mapstructure:"band"`
-	Certik      P2PConfig `mapstructure:"certik"`
-	Fetchai     P2PConfig `mapstructure:"fetchai"`
-	Irisnet     P2PConfig `mapstructure:"irisnet"`
-	Sifchain    P2PConfig `mapstructure:"sifchain"`
+	Terra         P2PConfig `mapstructure:"terra"`
+	Bombay        P2PConfig `mapstructure:"bombay"`
+	Sentinel      P2PConfig `mapstructure:"sentinel"`
+	Persistence   P2PConfig `mapstructure:"persistence"`
+	Lum           P2PConfig `mapstructure:"lum"`
+	Desmos        P2PConfig `mapstructure:"desmos"`
+	Injective     P2PConfig `mapstructure:"injective"`
+	Band          P2PConfig `mapstructure:"band"`
+	Certik        P2PConfig `mapstructure:"certik"`
+	Fetchai       P2PConfig `mapstructure:"fetchai"`
+	Irisnet       P2PConfig `mapstructure:"irisnet"`
+	Sifchain      P2PConfig `mapstructure:"sifchain"`
+	Rizon         P2PConfig `mapstructure:"rizon"`
+	Konstellation P2PConfig `mapstructure:"konstellation"`
+	Provenance    P2PConfig `mapstructure:"provenance"`
 
 	LogLevel string `mapstructure:"log_level"`
 	HttpPort string `mapstructure:"http_port"`
@@ -124,20 +127,24 @@ func checkActiveChains(tsConfig *TSConfig) {
 
 func initDefaultConfig() TSConfig {
 	tsConfig := TSConfig{
-		Terra:       *defaultP2PConfig(0),
-		Band:        *defaultP2PConfig(1),
-		Fetchai:     *defaultP2PConfig(2),
-		Injective:   *defaultP2PConfig(3),
-		Persistence: *defaultP2PConfig(4),
-		Irisnet:     *defaultP2PConfig(5),
-		Sentinel:    *defaultP2PConfig(6),
-		Certik:      *defaultP2PConfig(7),
-		Lum:         *defaultP2PConfig(8),
-		Sifchain:    *defaultP2PConfig(9),
-		Desmos:      *defaultP2PConfig(10),
-		Bombay:      *defaultP2PConfig(11),
-		LogLevel:    "info",
-		HttpPort:    "8090",
+		Terra:         *defaultP2PConfig(0),
+		Band:          *defaultP2PConfig(1),
+		Fetchai:       *defaultP2PConfig(2),
+		Injective:     *defaultP2PConfig(3),
+		Persistence:   *defaultP2PConfig(4),
+		Irisnet:       *defaultP2PConfig(5),
+		Sentinel:      *defaultP2PConfig(6),
+		Certik:        *defaultP2PConfig(7),
+		Lum:           *defaultP2PConfig(8),
+		Sifchain:      *defaultP2PConfig(9),
+		Desmos:        *defaultP2PConfig(10),
+		Bombay:        *defaultP2PConfig(11),
+		Rizon:         *defaultP2PConfig(12),
+		Konstellation: *defaultP2PConfig(13),
+		Provenance:    *defaultP2PConfig(14),
+
+		LogLevel: "info",
+		HttpPort: "8090",
 	}
 	return tsConfig
 }

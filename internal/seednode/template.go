@@ -78,4 +78,18 @@ chain_id = "{{ .Desmos.ChainId }}"
 seeds = "{{ .Desmos.Seeds }}"
 laddr = "{{ .Desmos.ListenAddress }}"
 
+[rizon]
+chain_id = "{{ .Rizon.ChainId }}"
+seeds = "{{ .Rizon.Seeds }}"
+laddr = "{{ .Rizon.ListenAddress }}"
+
+[konstellation]
+chain_id = "{{ .Konstellation.ChainId }}"
+seeds = "{{ .Konstellation.Seeds }}"
+laddr = "{{ .Konstellation.ListenAddress }}"
+
+[provenance]
+chain_id = "{{ .Provenance.ChainId }}"
+seeds = "{{ .Provenance.Seeds }}"
+laddr = "{{ .Provenance.ListenAddress }}"
 `
