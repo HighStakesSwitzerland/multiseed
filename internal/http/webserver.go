@@ -3,9 +3,9 @@ package http
 import (
 	"embed"
 	"encoding/json"
+	"github.com/highstakesswitzerland/multiseed/internal/geoloc"
+	"github.com/highstakesswitzerland/multiseed/internal/seednode"
 	"github.com/tendermint/tendermint/libs/log"
-	"github.com/terran-stakers/multiseed/internal/geoloc"
-	"github.com/terran-stakers/multiseed/internal/seednode"
 	"net/http"
 	"os"
 )

@@ -8,7 +8,7 @@ This tool runs a seed node for multiple tendermint based blockchain (i.e. Terra,
 ### Configuration
 
 ```bash
-git clone https://github.com/Terran-Stakers/multiseed
+git clone https://github.com/HighStakesSwitzerland/multiseed
 go mod tidy
 npm install
 npm run build

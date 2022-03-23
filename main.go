@@ -1,11 +1,11 @@
 package main
 
 import (
+	"github.com/highstakesswitzerland/multiseed/internal/geoloc"
+	"github.com/highstakesswitzerland/multiseed/internal/http"
+	"github.com/highstakesswitzerland/multiseed/internal/seednode"
 	"github.com/tendermint/tendermint/libs/log"
 	"github.com/tendermint/tendermint/p2p"
-	"github.com/terran-stakers/multiseed/internal/geoloc"
-	"github.com/terran-stakers/multiseed/internal/http"
-	"github.com/terran-stakers/multiseed/internal/seednode"
 	"os"
 	"time"
 )

@@ -1,6 +1,6 @@
-go 1.17
+go 1.18
 
-module github.com/terran-stakers/multiseed
+module github.com/highstakesswitzerland/multiseed
 
 require (
 	github.com/mitchellh/go-homedir v1.1.0
