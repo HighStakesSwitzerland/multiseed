@@ -70,7 +70,7 @@ func startSeedNode(config *P2PConfig, nodeKey *p2p.NodeKey, configLogLevel strin
 	config.RecvRate = 5120000
 	config.SendRate = 5120000
 	config.MaxPacketMsgPayloadSize = 1024
-	config.FlushThrottleTimeout = 100 * time.Millisecond
+	config.FlushThrottleTimeout = 100 * time.Second
 	config.AllowDuplicateIP = true
 	config.DialTimeout = 30 * time.Second
 	config.HandshakeTimeout = 20 * time.Second
@@ -89,7 +89,7 @@ func startSeedNode(config *P2PConfig, nodeKey *p2p.NodeKey, configLogLevel strin
 		SeedMode:                     true,
 		Seeds:                        tmstrings.SplitAndTrim(config.Seeds, ",", " "),
 		SeedDisconnectWaitPeriod:     5 * time.Minute, // default is 28 hours, we just want to harvest as many addresses as possible
-		PersistentPeersMaxDialPeriod: 5 * time.Minute, // use exponential back-off
+		PersistentPeersMaxDialPeriod: 0,               // use exponential back-off
 	})
 
 	sw := p2p.NewSwitch(&config.P2PConfig, transport)
