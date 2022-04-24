@@ -17,6 +17,7 @@ import (
 
 // TSConfig extends tendermint P2PConfig with the things we need
 type TSConfig struct {
+	Osmosis       P2PConfig `mapstructure:"osmosis"`
 	Terra         P2PConfig `mapstructure:"terra"`
 	Bombay        P2PConfig `mapstructure:"bombay"`
 	Sentinel      P2PConfig `mapstructure:"sentinel"`

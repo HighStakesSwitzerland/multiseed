@@ -18,6 +18,11 @@ http_port = "{{ .HttpPort }}"
 log_level = "{{ .LogLevel }}"
 
 # Chain specific config
+[osmosis]
+chain_id = "{{ .Osmosis.ChainId }}"
+seeds = "{{ .Osmosis.Seeds }}"
+laddr = "{{ .Osmosis.ListenAddress }}"
+
 [terra]
 chain_id = "{{ .Terra.ChainId }}"
 seeds = "{{ .Terra.Seeds }}"
