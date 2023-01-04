@@ -1,8 +1,8 @@
 package seednode
 
 import (
-	"github.com/tendermint/tendermint/p2p"
-	"github.com/tendermint/tendermint/p2p/pex"
+	"github.com/HighStakesSwitzerland/tendermint/p2p"
+	"github.com/HighStakesSwitzerland/tendermint/p2p/pex"
 )
 
 var (
@@ -16,8 +16,8 @@ type Peer struct {
 }
 
 /*
-	Returns the current reactor peers. As in seed mode the pex module disconnects quickly, this list can grow and shrink
-	according to the current connexions
+Returns the current reactor peers. As in seed mode the pex module disconnects quickly, this list can grow and shrink
+according to the current connexions
 */
 func ToSeednodePeers(peers []p2p.Peer) []*Peer {
 	if len(peers) > 0 {

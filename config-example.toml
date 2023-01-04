@@ -12,62 +12,9 @@
 # Port for the frontend
 http_port = "8090"
 
-# Output level for logging: "none", info", "error", "debug". debug will enable pex and addrbook (very) verbose logs
-log_level = "none"
-
 # Chain specific config
 [terra]
+[p2p]
 chain_id = "columbus-5"
-seeds = "e999fc20aa5b87c1acef8677cf495ad85061cfb9@seed.terra.delightlabs.io:26656,6d8e943c049a80c161a889cb5fcf3d184215023e@public-seed2.terra.dev:26656,87048bf71526fb92d73733ba3ddb79b7a83ca11e@public-seed.terra.dev:26656,66aa2bac58b137e17865035567fc85f06953d4af@terra-seed01.stakers.finance:26656"
+bootstrap-peers = "e999fc20aa5b87c1acef8677cf495ad85061cfb9@seed.terra.delightlabs.io:26656,6d8e943c049a80c161a889cb5fcf3d184215023e@public-seed2.terra.dev:26656,87048bf71526fb92d73733ba3ddb79b7a83ca11e@public-seed.terra.dev:26656,66aa2bac58b137e17865035567fc85f06953d4af@terra-seed01.stakers.finance:26656"
 laddr = "tcp://0.0.0.0:26656"
-
-[band]
-chain_id = "laozi-mainnet"
-seeds = "8d42bdcb6cced03e0b67fa3957e4e9c8fd89015a@34.87.86.195:26656,543e0cab9c3016a0e99775443a17bcf163038912@34.150.156.78:26656"
-laddr = "tcp://0.0.0.0:26657"
-
-[fetchai]
-chain_id = "fetchhub-2"
-seeds = "c240ca38b990a7d3f25621eb848d0222d5b50278@connect-fetchhub2.m-v2-london-c.fetch-ai.com:36656,3e19e092c5ddd19a6aa8ba87fa8a37566d4f7f38@connect-fetchhub2.m-v2-london-c.fetch-ai.com:36657,b75b1ed0a1257e99d41b48d0704a605854d80514@connect-fetchhub2.m-v2-london-c.fetch-ai.com:36658"
-laddr = "tcp://0.0.0.0:26658"
-
-[injective]
-seeds = "2ee7586d8e5a4a2020dafddf68efdfdaa3606cc3@145.40.67.249:26656,7bb20f8e9fa73e34d0d21862528d5fba839eeb56@145.40.73.39:26656,de25916e19083d44d67e0c336199b215523f1578@145.40.68.223:26656,1a2ccd9c436eae54d6c767ad566c58dce78f8be2@145.40.68.125:26656"
-chain_id = "injective-1"
-laddr = "tcp://0.0.0.0:26659"
-
-[persistence]
-chain_id = "core-1"
-seeds = "08ab4552a74dd7e211fc79432918d35818a67189@52.69.58.231:26656,449a0f1b7dafc142cf23a1f6166bbbf035edfb10@13.232.85.66:26656,5b27a6d4cf33909c0e5b217789e7455e261941d1@15.222.29.207:26656"
-laddr = "tcp://0.0.0.0:26660"
-
-[irisnet]
-chain_id = "irishub-1"
-seeds = "a17d7923293203c64ba75723db4d5f28e642f469@seed-2.mainnet.irisnet.org:26656"
-laddr = "tcp://0.0.0.0:26661"
-
-[sentinel]
-chain_id = "sentinelhub-2"
-seeds = "6bfe4a345cab50f20f3b476e4d8c37e835913c8a@65.21.7.201:26656,6fc8f37b5ac4cf2b42d15ff96b1ad9724a509acf@159.203.174.29:26656"
-laddr = "tcp://0.0.0.0:26662"
-
-[certik]
-chain_id = "shentu-2.2"
-seeds = "b3192e1ab0cbb9f439b15c82605379018d96b4f2@3.209.12.186:26656,23419a3d9deedabce1a3cbfa0d1a3e55ef2364a7@134.229.203.57:26656,6647bdb863cb9b862a00f0ec29337f3d7ed30e57@34.232.46.41:26656"
-laddr = "tcp://0.0.0.0:26663"
-
-[lum]
-chain_id = "lum-network-1"
-seeds = "19ad16527c98b782ee35df56b65a3a251bd99971@peer-1.mainnet.lum.network:26656"
-laddr = "tcp://0.0.0.0:26664"
-
-[sifchain]
-chain_id = "sifchain-1"
-seeds = "8c240f71f9e060277ce18dc09d82d3bbb05d1972@13.211.43.177:26656,0120f0a48e7e81cc98829ef4f5b39480f11ecd5a@52.76.185.17:26656,bcc2d07a14a8a0b3aa202e9ac106dec0bef91fda@13.55.247.60:26656,b7246003ad99b63d9de136b02f680ac35e8d2fb4@35.166.247.98:26656"
-laddr = "tcp://0.0.0.0:26665"
-
-[desmos]
-chain_id = "desmos-mainnet"
-seeds = "9bde6ab4e0e00f721cc3f5b4b35f3a0e8979fab5@seed-1.mainnet.desmos.network:26656,5c86915026093f9a2f81e5910107cf14676b48fc@seed-2.mainnet.desmos.network:26656,45105c7241068904bdf5a32c86ee45979794637f@seed-3.mainnet.desmos.network:26656"
-laddr = "tcp://0.0.0.0:26666"
-

@@ -2,24 +2,22 @@ package seednode
 
 import (
 	"fmt"
-	"github.com/mitchellh/go-homedir"
-	"github.com/tendermint/tendermint/libs/log"
-	tmos "github.com/tendermint/tendermint/libs/os"
-	tmstrings "github.com/tendermint/tendermint/libs/strings"
-	"github.com/tendermint/tendermint/p2p"
-	"github.com/tendermint/tendermint/p2p/pex"
-	"github.com/tendermint/tendermint/version"
-	"os"
-	"path/filepath"
+	"github.com/HighStakesSwitzerland/tendermint/config"
+	"github.com/HighStakesSwitzerland/tendermint/libs/log"
+	tmos "github.com/HighStakesSwitzerland/tendermint/libs/os"
+	"github.com/HighStakesSwitzerland/tendermint/node"
+	"github.com/HighStakesSwitzerland/tendermint/proto/tendermint/p2p"
+	"github.com/HighStakesSwitzerland/tendermint/types"
+	"github.com/HighStakesSwitzerland/tendermint/version"
 	"reflect"
 	"time"
 )
 
 var (
-	logger = log.NewTMLogger(log.NewSyncWriter(os.Stdout)).With("module", "config")
+	logger = log.MustNewDefaultLogger("text", "info", false)
 )
 
-func StartSeedNodes(seedConfig *TSConfig, nodeKey *p2p.NodeKey) []p2p.Switch {
+func StartSeedNodes(seedConfig *TSConfig, nodeKey *types.NodeKey) {
 	var switches []p2p.Switch
 
 	value := reflect.ValueOf(seedConfig)
@@ -36,84 +34,63 @@ func StartSeedNodes(seedConfig *TSConfig, nodeKey *p2p.NodeKey) []p2p.Switch {
 	return switches
 }
 
-func startSeedNode(config *P2PConfig, nodeKey *p2p.NodeKey, configLogLevel string) *p2p.Switch {
-	if config.Enable == false {
+func startSeedNode(cfg *P2PConfig, nodeKey *p2p.NodeInfo, configLogLevel string) *p2p.Switch {
+	if cfg.Enable == false {
 		return nil
 	}
 
-	logger.Info("Starting Seed Node for chain " + config.ChainId)
+	logger.Info("Starting Seed Node for chain " + cfg.ChainId)
 
-	protocolVersion :=
-		p2p.NewProtocolVersion(
-			version.P2PProtocol,
-			version.BlockProtocol,
-			0,
-		)
+	id, _ := types.NewNodeID(nodeKey.NodeID)
 
 	// NodeInfo gets info on your node
-	nodeInfo := p2p.DefaultNodeInfo{
-		ProtocolVersion: protocolVersion,
-		DefaultNodeID:   nodeKey.ID(),
-		ListenAddr:      config.ListenAddress,
-		Network:         config.ChainId,
-		Version:         "1.0.0",
-		Channels:        []byte{byte(0x00)},
-		Moniker:         fmt.Sprintf("%s-multiseed", config.ChainId),
+	nodeInfo := types.NodeInfo{
+		ProtocolVersion: types.ProtocolVersion{
+			P2P:   version.P2PProtocol,
+			Block: version.BlockProtocol,
+			App:   0,
+		},
+		NodeID:     id,
+		ListenAddr: cfg.P2P.ListenAddress,
+		Moniker:    fmt.Sprintf("%s-multiseed", cfg.ChainId),
+		Version:    "1.0.0",
+		Network:    cfg.ChainId,
+		Channels:   []byte{byte(0x00)},
 	}
 
-	addr, err := p2p.NewNetAddressString(p2p.IDAddressString(nodeInfo.DefaultNodeID, nodeInfo.ListenAddr))
+	addr, err := types.NewNetAddressString(id.AddressString(cfg.P2P.ListenAddress))
 	if err != nil {
 		panic(err)
 	}
 
 	// set conn settings
-	config.RecvRate = 5120000
-	config.SendRate = 5120000
-	config.MaxPacketMsgPayloadSize = 1024
-	config.FlushThrottleTimeout = 100 * time.Second
-	config.AllowDuplicateIP = true
-	config.DialTimeout = 30 * time.Second
-	config.HandshakeTimeout = 20 * time.Second
-	config.SeedMode = true
+	cfg.P2P.RecvRate = 51200
+	cfg.P2P.SendRate = 51200
+	cfg.P2P.MaxPacketMsgPayloadSize = 1024
+	cfg.P2P.FlushThrottleTimeout = 100 * time.Second
+	cfg.P2P.AllowDuplicateIP = true
+	cfg.P2P.DialTimeout = 5 * time.Second
+	cfg.P2P.HandshakeTimeout = 3 * time.Second
+	cfg.P2P.PexReactor = true
+	cfg.Mode = config.ModeSeed
+	cfg.NodeKey = ".multiseed"
+	cfg.P2P.AddrBook = "addrbook-" + cfg.ChainId + ".json"
 
-	transport := p2p.NewMultiplexTransport(nodeInfo, *nodeKey, p2p.MConnConfig(&config.P2PConfig))
-	if err := transport.Listen(*addr); err != nil {
+	seedNode, err := node.NewDefault(&cfg.Config, logger)
+	if err != nil {
 		panic(err)
 	}
 
-	userHomeDir, _ := homedir.Dir()
-	addrBookFilePath := filepath.Join(userHomeDir, ".multiseed", "addrbook-"+config.ChainId+".json")
-	addrBook := pex.NewAddrBook(addrBookFilePath, config.AddrBookStrict)
+	seedNode.Start()
 
-	pexReactor := pex.NewReactor(addrBook, &pex.ReactorConfig{
-		SeedMode:                     true,
-		Seeds:                        tmstrings.SplitAndTrim(config.Seeds, ",", " "),
-		SeedDisconnectWaitPeriod:     5 * time.Minute, // default is 28 hours, we just want to harvest as many addresses as possible
-		PersistentPeersMaxDialPeriod: 0,               // use exponential back-off
-	})
-
-	sw := p2p.NewSwitch(&config.P2PConfig, transport)
+	sw := p2p.NewSwitch(&cfg.P2PConfig, transport)
 
 	sw.SetNodeKey(nodeKey)
 	sw.SetAddrBook(addrBook)
 	sw.AddReactor("pex", pexReactor)
 
-	var configuredLogger log.Logger
-	switch configLogLevel {
-	case "none":
-		configuredLogger = log.NewNopLogger()
-	case "info":
-		configuredLogger = log.NewFilter(log.NewTMLogger(log.NewSyncWriter(os.Stdout)), log.AllowInfo())
-	case "error":
-		configuredLogger = log.NewFilter(log.NewTMLogger(log.NewSyncWriter(os.Stdout)), log.AllowError())
-	case "debug":
-		configuredLogger = log.NewFilter(log.NewTMLogger(log.NewSyncWriter(os.Stdout)), log.AllowDebug())
-	default:
-		configuredLogger = logger
-	}
-
 	sw.SetLogger(configuredLogger.With("module", "switch"))
-	addrBook.SetLogger(configuredLogger.With("module", "addrbook", "chain", config.ChainId))
+	addrBook.SetLogger(configuredLogger.With("module", "addrbook", "chain", cfg.ChainId))
 	pexReactor.SetLogger(configuredLogger.With("module", "pex"))
 
 	// last

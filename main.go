@@ -1,18 +1,17 @@
 package main
 
 import (
+	"github.com/HighStakesSwitzerland/tendermint/internals/p2p"
+	"github.com/HighStakesSwitzerland/tendermint/libs/log"
 	"github.com/highstakesswitzerland/multiseed/internal/geoloc"
 	"github.com/highstakesswitzerland/multiseed/internal/http"
 	"github.com/highstakesswitzerland/multiseed/internal/seednode"
-	"github.com/tendermint/tendermint/libs/log"
-	"github.com/tendermint/tendermint/p2p"
-	"os"
 	"time"
 )
 
 var (
-	logger = log.NewTMLogger(log.NewSyncWriter(os.Stdout)).With("module", "main")
-	ticker = time.NewTicker(5 * time.Second)
+	logger = log.MustNewDefaultLogger("text", "info", false)
+	ticker = time.NewTicker(60 * time.Second)
 )
 
 func main() {
