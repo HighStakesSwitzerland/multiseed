@@ -2,10 +2,8 @@ package seednode
 
 import (
 	"bytes"
-	"errors"
 	"fmt"
 	"github.com/HighStakesSwitzerland/tendermint/config"
-	"github.com/HighStakesSwitzerland/tendermint/libs/log"
 	"github.com/HighStakesSwitzerland/tendermint/types"
 	"github.com/mitchellh/go-homedir"
 	"github.com/spf13/viper"
@@ -27,6 +25,7 @@ type TSConfig struct {
 type P2PConfig struct {
 	config.Config `mapstructure:",squash"`
 	ChainId       string `mapstructure:"chain_id"`
+	PrettyName    string `mapstructure:"pretty_name"`
 }
 
 var configTemplate *template.Template
@@ -86,41 +85,6 @@ func InitConfigs() (*TSConfig, types.NodeKey) {
 	checkActiveChains(&tsConfig)
 
 	return &tsConfig, nodeKey
-}
-
-func setupNode() (*config.Config, log.Logger, error) {
-	var tmcfg *config.Config
-
-	home := os.Getenv("TMHOME")
-	if home == "" {
-		return nil, nil, errors.New("TMHOME not set")
-	}
-
-	viper.AddConfigPath(filepath.Join(home, "config"))
-	viper.SetConfigName("config")
-
-	if err := viper.ReadInConfig(); err != nil {
-		return nil, nil, err
-	}
-
-	tmcfg = config.DefaultConfig()
-
-	if err := viper.Unmarshal(tmcfg); err != nil {
-		return nil, nil, err
-	}
-
-	tmcfg.SetRoot(home)
-
-	if err := tmcfg.ValidateBasic(); err != nil {
-		return nil, nil, fmt.Errorf("error in config file: %w", err)
-	}
-
-	nodeLogger, err := log.NewDefaultLogger(tmcfg.LogFormat, tmcfg.LogLevel, false)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	return tmcfg, nodeLogger.With("module", "main"), nil
 }
 
 func checkActiveChains(tsConfig *TSConfig) {

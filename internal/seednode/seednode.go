@@ -15,23 +15,30 @@ import (
 )
 
 var (
-	logger = log.MustNewDefaultLogger("text", "info", false)
+	logger     = log.MustNewDefaultLogger("text", "info", false)
+	noOpLogger = log.NewNopLogger()
 )
 
-func StartSeedNodes(seedConfig *TSConfig, nodeKey *types.NodeKey) []p2p.Switch {
-	var switches []p2p.Switch
+type SeedNodeConfig struct {
+	Sw       *p2p.Switch
+	Cfg      *P2PConfig
+	AddrBook pex.AddrBook
+}
+
+func StartSeedNodes(seedConfig *TSConfig, nodeKey *types.NodeKey) []SeedNodeConfig {
+	var seedNodes []SeedNodeConfig
 
 	for _, chain := range seedConfig.Chains {
-		if sw := startSeedNode(&chain, nodeKey); sw != nil {
-			switches = append(switches, *sw)
+		if sw, cfg, addrBook := startSeedNode(&chain, nodeKey); sw != nil {
+			seedNodes = append(seedNodes, SeedNodeConfig{sw, cfg, addrBook})
 		}
 	}
 
-	return switches
+	return seedNodes
 }
 
-func startSeedNode(cfg *P2PConfig, nodeKey *types.NodeKey) *p2p.Switch {
-	logger.Info("Starting Seed Node for chain " + cfg.ChainId)
+func startSeedNode(cfg *P2PConfig, nodeKey *types.NodeKey) (*p2p.Switch, *P2PConfig, pex.AddrBook) {
+	logger.Info(fmt.Sprintf("Starting Seed Node for chain %s [%s]", cfg.PrettyName, cfg.ChainId))
 
 	nodeInfo := types.NodeInfo{
 		ProtocolVersion: types.ProtocolVersion{
@@ -67,9 +74,11 @@ func startSeedNode(cfg *P2PConfig, nodeKey *types.NodeKey) *p2p.Switch {
 		SeedDisconnectWaitPeriod:     5 * time.Minute, // default is 28 hours, we just want to harvest as many addresses as possible
 		PersistentPeersMaxDialPeriod: 5 * time.Minute, // use exponential back-off
 	})
+	// TODO: CAN ask for addresses
+	// pexReactor.ReceiveAddrs()
 
 	transport := p2p.NewMConnTransport(
-		logger, p2p.MConnConfig(cfg.P2P), []*p2p.ChannelDescriptor{},
+		noOpLogger, p2p.MConnConfig(cfg.P2P), []*p2p.ChannelDescriptor{},
 		p2p.MConnTransportOptions{
 			MaxAcceptedConnections: uint32(cfg.P2P.MaxNumInboundPeers),
 		},
@@ -86,7 +95,11 @@ func startSeedNode(cfg *P2PConfig, nodeKey *types.NodeKey) *p2p.Switch {
 	}
 	sw := p2p.NewSwitch(cfg.P2P, transport)
 
-	sw.SetLogger(log.MustNewDefaultLogger("text", "warn", false))
+	sw.SetLogger(noOpLogger)
+	sw.BaseService.SetLogger(noOpLogger)
+	addrBook.SetLogger(noOpLogger)
+	pexReactor.SetLogger(noOpLogger)
+
 	sw.SetNodeKey(*nodeKey)
 	sw.SetAddrBook(addrBook)
 	sw.AddReactor("pex", pexReactor)
@@ -99,11 +112,30 @@ func startSeedNode(cfg *P2PConfig, nodeKey *types.NodeKey) *p2p.Switch {
 		panic(err)
 	}
 
+	dialAddressBookPeers(addrBook, sw)
 	tmos.TrapSignal(logger, func() {
-		logger.Info("shutting down addrbooks...")
+		logger.Info("Shutting down chain " + cfg.PrettyName)
 		_ = addrBook.Stop()
 		_ = sw.Stop()
+		_ = pexReactor.Stop()
 	})
 
-	return sw
+	return sw, cfg, addrBook
+}
+
+func dialAddressBookPeers(addrBook pex.AddrBook, sw *p2p.Switch) {
+	addresses := addrBook.GetSelection() // this returns max 100 peers, but it's enough to start faster
+	stringAddresses := make([]string, 0)
+	for _, address := range addresses {
+		stringAddresses = append(stringAddresses, address.String())
+	}
+	if len(stringAddresses) == 0 {
+		logger.Info("No addresses to dial from existing address book")
+		return
+	}
+	logger.Info(fmt.Sprintf("Will dial %d peers from existing address book", len(stringAddresses)))
+	err := sw.DialPeersAsync(stringAddresses)
+	if err != nil {
+		logger.Error("Could not dial existing seeds in address book at startup")
+	}
 }

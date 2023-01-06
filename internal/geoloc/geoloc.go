@@ -4,31 +4,46 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/HighStakesSwitzerland/tendermint/internals/p2p"
+	"github.com/HighStakesSwitzerland/tendermint/internals/p2p/pex"
 	"github.com/HighStakesSwitzerland/tendermint/libs/log"
+	"github.com/HighStakesSwitzerland/tendermint/types"
 	"github.com/go-kit/kit/transport/http/jsonrpc"
 	"github.com/highstakesswitzerland/multiseed/internal/seednode"
 	"io"
 	"io/ioutil"
+	mrand "math/rand"
+	"net"
 	"net/http"
+	"time"
 )
 
 var (
-	ResolvedPeers = make(map[string][]GeolocalizedPeers)
+	ResolvedPeers = make(map[string]Chain)
 	logger        = log.MustNewDefaultLogger("text", "info", false)
 	ipApiUrl      = "http://ip-api.com/batch"
 )
 
+type Chain struct {
+	ChainId    string              `json:"chain_id"`
+	PrettyName string              `json:"pretty_name"`
+	Nodes      []GeolocalizedPeers `json:"nodes"`
+}
+
 type GeolocalizedPeers struct {
-	seednode.Peer
-	Country string  `json:"country"`
-	Region  string  `json:"region"`
-	City    string  `json:"city"`
-	Lat     float32 `json:"lat"`
-	Lon     float32 `json:"lon"`
-	Isp     string  `json:"isp"`
-	Org     string  `json:"org"`
-	As      string  `json:"as"`
-	NodeId  string  `json:"nodeId"`
+	Moniker  string       `json:"moniker"`
+	IP       net.IP       `json:"-"` // IPs should not be sent to the frontend
+	Port     uint16       `json:"-"`
+	NodeId   types.NodeID `json:"node_id"`
+	LastSeen time.Time    `json:"last_seen"`
+	Country  string       `json:"country"`
+	Region   string       `json:"region"`
+	City     string       `json:"city"`
+	Lat      float32      `json:"lat"`
+	Lon      float32      `json:"lon"`
+	Isp      string       `json:"isp"`
+	Org      string       `json:"org"`
+	As       string       `json:"as"`
 }
 
 type ipServiceResponse struct {
@@ -52,24 +67,94 @@ type ipServiceResponse struct {
 Resolve ips using https://ip-api.com/ geolocation free service
 Appends the new resolved peers to the ResolvedPeers slice, so we keep the full list since the startup
 */
-func ResolveIps(peerList []*seednode.Peer, chain string) {
-	if len(peerList) > 0 {
-		if peers := ResolvedPeers[chain]; peers == nil {
-			ResolvedPeers[chain] = nil
+func ResolveIps(cfg seednode.SeedNodeConfig) {
+	chainId := cfg.Sw.NodeInfo().Network
+	chain := ResolvedPeers[chainId]
+	geolocalizedPeers := resolve(get45UnresolvedPeers(cfg, chainId)) //will limit to 45 peers
+	for _, peer := range geolocalizedPeers {
+		// save the peer to the address book if it doesn't exist
+		err := cfg.AddrBook.AddAddress(&p2p.NetAddress{
+			ID:   peer.NodeId,
+			IP:   peer.IP,
+			Port: peer.Port,
+		}, cfg.Sw.NetAddress())
+		if err != nil {
+			logger.Error("Error adding peer to address book: " + err.Error())
 		}
-		ResolvedPeers[chain] = append(ResolvedPeers[chain], resolve(getUnresolvedPeers(peerList, chain))...)
-		logger.Info(fmt.Sprintf("We have %d total resolved peers", len(ResolvedPeers)))
+		for _, address := range cfg.AddrBook.GetAddrbookContent() {
+			if address.Addr.IP.String() == peer.IP.String() {
+				// element exists in address book (hopefully always the case), we need to update it
+				address.Org = peer.Org
+				address.As = peer.As
+				address.Isp = peer.Isp
+				address.Lat = peer.Lat
+				address.Lon = peer.Lon
+				address.City = peer.City
+				address.Region = peer.Region
+				address.Country = peer.Country
+			}
+		}
 	}
+	for _, newPeer := range geolocalizedPeers {
+		found := false
+		for _, existingPeer := range chain.Nodes {
+			if existingPeer.IP.Equal(newPeer.IP) {
+				found = true
+				existingPeer.LastSeen = newPeer.LastSeen
+				existingPeer.NodeId = newPeer.NodeId
+				existingPeer.Lat = newPeer.Lat
+				existingPeer.Lon = newPeer.Lon
+				existingPeer.Moniker = newPeer.Moniker
+				existingPeer.Country = newPeer.Country
+				existingPeer.Region = newPeer.Region
+				existingPeer.City = newPeer.City
+				existingPeer.Isp = newPeer.Isp
+				existingPeer.As = newPeer.As
+				existingPeer.Org = newPeer.Org
+				break
+			}
+		}
+		if !found {
+			chain.Nodes = append(chain.Nodes, newPeer) // add new peer if not found
+		}
+	}
+	ResolvedPeers[chainId] = chain
+	logger.Info(fmt.Sprintf("We have %d total resolved peers for chain %s", len(ResolvedPeers), cfg.Cfg.PrettyName))
 }
 
-func resolve(peers []*seednode.Peer) []GeolocalizedPeers {
+func LoadSavedResolvedPeers(cfg seednode.SeedNodeConfig) {
+	chain := ResolvedPeers[cfg.Cfg.ChainId]
+	chain.ChainId = cfg.Cfg.ChainId
+	chain.PrettyName = cfg.Cfg.PrettyName
+	chain.Nodes = make([]GeolocalizedPeers, 0)
+
+	for _, address := range cfg.AddrBook.GetAddrbookContent() {
+		if address.Lat != 0 { // only add resolved nodes
+			node := GeolocalizedPeers{
+				Moniker:  address.Moniker,
+				IP:       address.Addr.IP,
+				Port:     address.Addr.Port,
+				LastSeen: address.LastSuccess,
+				Country:  address.Country,
+				Region:   address.Region,
+				City:     address.City,
+				Lat:      address.Lat,
+				Lon:      address.Lon,
+				Isp:      address.Isp,
+				Org:      address.Org,
+				As:       address.As,
+				NodeId:   address.ID(),
+			}
+			chain.Nodes = append(chain.Nodes, node)
+		}
+	}
+	ResolvedPeers[cfg.Cfg.ChainId] = chain
+}
+
+func resolve(unresolvedPeers []*seednode.Peer) []GeolocalizedPeers {
 	chunkSize := 10
 	var geolocalizedPeers []GeolocalizedPeers
-	unresolvedPeers := getUnresolvedPeers(peers, "")
 	peersLength := len(unresolvedPeers)
-	if peersLength > 0 {
-		logger.Info(fmt.Sprintf("There are %d new peers that need resolution", peersLength))
-	}
 
 	for i := 0; i < peersLength; i += chunkSize {
 		end := i + chunkSize
@@ -79,26 +164,35 @@ func resolve(peers []*seednode.Peer) []GeolocalizedPeers {
 		var chunk []*seednode.Peer
 		chunk = append(chunk, unresolvedPeers[i:end]...)
 		if len(chunk) > 0 {
+			time.Sleep(1 * time.Second) // external service provider does not like fast queries...
 			ipServiceResponses := fillGeolocData(chunk)
-			var peer *seednode.Peer
 			var newGeolocalizedPeer GeolocalizedPeers
+			if ipServiceResponses == nil {
+				continue
+			}
 			for _, elt := range ipServiceResponses {
-				peer = findPeerInList(elt, unresolvedPeers)
+				if elt.Status != "success" {
+					continue
+				}
+				peer := findPeerInList(elt, unresolvedPeers)
 				if peer == nil {
 					logger.Error("Could not find peer in existing list! It may have not been resolved by the service")
 					continue
 				}
 				newGeolocalizedPeer = GeolocalizedPeers{
-					Peer:    *peer,
-					Country: elt.Country,
-					Region:  elt.Region,
-					City:    elt.City,
-					Lat:     elt.Lat,
-					Lon:     elt.Lon,
-					Isp:     elt.Isp,
-					Org:     elt.Org,
-					As:      elt.As,
-					NodeId:  string(peer.NodeId),
+					Moniker:  peer.Moniker,
+					LastSeen: peer.LastSeen,
+					Country:  elt.Country,
+					Region:   elt.Region,
+					City:     elt.City,
+					Lat:      elt.Lat,
+					Lon:      elt.Lon,
+					Isp:      elt.Isp,
+					Org:      elt.Org,
+					As:       elt.As,
+					NodeId:   peer.NodeId,
+					IP:       peer.IP,
+					Port:     peer.Port,
 				}
 				geolocalizedPeers = append(geolocalizedPeers, newGeolocalizedPeer)
 			}
@@ -109,13 +203,13 @@ func resolve(peers []*seednode.Peer) []GeolocalizedPeers {
 
 func fillGeolocData(chunk []*seednode.Peer) []ipServiceResponse {
 	logger.Info(fmt.Sprintf("Calling ip-api service with %d IPs", len(chunk)))
-	var list []string
+	var ipList []string
 
 	for _, peer := range chunk {
-		list = append(list, peer.IP)
+		ipList = append(ipList, (*peer).IP.String())
 	}
 
-	payload, err := json.Marshal(list)
+	payload, err := json.Marshal(ipList)
 	if err != nil {
 		logger.Error("Failed to marshal peers list for geoloc service", err)
 		return nil
@@ -123,7 +217,7 @@ func fillGeolocData(chunk []*seednode.Peer) []ipServiceResponse {
 
 	post, err := http.Post(ipApiUrl, jsonrpc.ContentType, bytes.NewBuffer(payload))
 	if err != nil {
-		logger.Error("IP geoloc service returned an error", err)
+		logger.Error(fmt.Sprintf("IP geoloc service returned an error: %s", err.Error()))
 		return nil
 	}
 
@@ -148,20 +242,43 @@ func fillGeolocData(chunk []*seednode.Peer) []ipServiceResponse {
 	return response
 }
 
-func getUnresolvedPeers(peers []*seednode.Peer, chain string) []*seednode.Peer {
+// We limit to 45 peers because of the rate limit of ip-api external service (45 per minute)
+func get45UnresolvedPeers(cfg seednode.SeedNodeConfig, chain string) []*seednode.Peer {
 	var peersToResolve []*seednode.Peer
 
-	for _, peer := range peers {
-		if !isResolved(peer, chain) {
+	for _, peer := range seednode.ToSeednodePeers(cfg.Sw.Peers().List()) {
+		if !isResolved(*peer, chain) {
 			peersToResolve = append(peersToResolve, peer)
+		}
+		if len(peersToResolve) == 45 {
+			break
+		}
+	}
+	if len(peersToResolve) < 45 {
+		// fill with unresolved peers from addressbook
+		// TODO: also get older peers that could be refreshed? Or remove them definitively?
+		knownAddresses := getRandomPeersFromAddrBook(cfg.AddrBook.GetAddrbookContent())
+		for _, address := range knownAddresses {
+			if len(address.Country) == 0 {
+				peer := &seednode.Peer{
+					Moniker:  address.Moniker,
+					IP:       address.Addr.IP,
+					NodeId:   address.ID(),
+					LastSeen: address.LastSuccess,
+				}
+				peersToResolve = append(peersToResolve, peer)
+			}
+			if len(peersToResolve) == 45 {
+				break
+			}
 		}
 	}
 	return peersToResolve
 }
 
-func isResolved(peer *seednode.Peer, chain string) bool {
-	for _, elt := range ResolvedPeers[chain] {
-		if elt.Peer.IP == peer.IP {
+func isResolved(peer seednode.Peer, chain string) bool {
+	for _, elt := range ResolvedPeers[chain].Nodes {
+		if elt.IP.String() == peer.IP.String() {
 			return true
 		}
 	}
@@ -170,9 +287,33 @@ func isResolved(peer *seednode.Peer, chain string) bool {
 
 func findPeerInList(ipServiceResponse ipServiceResponse, peer []*seednode.Peer) *seednode.Peer {
 	for _, elt := range peer {
-		if elt.IP == ipServiceResponse.Query {
+		if (*elt).IP.String() == ipServiceResponse.Query { // TODO: what on ipv6
 			return elt
 		}
 	}
 	return nil
+}
+
+func getRandomPeersFromAddrBook(addrbook []*pex.KnownAddress) []*pex.KnownAddress {
+	bookSize := len(addrbook)
+	// XXX: instead of making a list of all addresses, shuffling, and slicing a random chunk,
+	// could we just select a random numAddresses of indexes?
+	allAddr := make([]*pex.KnownAddress, bookSize)
+	i := 0
+	for _, ka := range addrbook {
+		allAddr[i] = ka
+		i++
+	}
+
+	// Fisher-Yates shuffle the array. We only need to do the first
+	// `numAddresses' since we are throwing the rest.
+	for i := 0; i < 45; i++ {
+		// pick a number between current index and the end
+		// nolint:gosec // G404: Use of weak random number generator
+		j := mrand.Intn(len(allAddr)-i) + i
+		allAddr[i], allAddr[j] = allAddr[j], allAddr[i]
+	}
+
+	// slice off the limit we are willing to share.
+	return allAddr[:45]
 }
