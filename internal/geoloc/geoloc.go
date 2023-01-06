@@ -92,6 +92,7 @@ func ResolveIps(cfg seednode.SeedNodeConfig) {
 				address.City = peer.City
 				address.Region = peer.Region
 				address.Country = peer.Country
+				address.Moniker = peer.Moniker
 			}
 		}
 	}
