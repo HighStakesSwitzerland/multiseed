@@ -1,8 +1,9 @@
 package seednode
 
 import (
-	"github.com/HighStakesSwitzerland/tendermint/p2p"
-	"github.com/HighStakesSwitzerland/tendermint/p2p/pex"
+	"github.com/HighStakesSwitzerland/tendermint/internals/p2p"
+	"github.com/HighStakesSwitzerland/tendermint/internals/p2p/pex"
+	"github.com/HighStakesSwitzerland/tendermint/types"
 )
 
 var (
@@ -10,9 +11,9 @@ var (
 )
 
 type Peer struct {
-	Moniker string `json:"moniker"`
-	IP      string `json:"-"` // IPs should not be sent to the frontend
-	NodeId  p2p.ID `json:"-"`
+	Moniker string       `json:"moniker"`
+	IP      string       `json:"-"` // IPs should not be sent to the frontend
+	NodeId  types.NodeID `json:"-"`
 }
 
 /*
@@ -32,7 +33,7 @@ func p2pPeersToPeerList(list []p2p.Peer) []*Peer {
 	var _peers []*Peer
 	for _, p := range list {
 		_peers = append(_peers, &Peer{
-			Moniker: p.NodeInfo().(p2p.DefaultNodeInfo).Moniker,
+			Moniker: p.NodeInfo().Moniker,
 			IP:      p.(pex.Peer).RemoteIP().String(),
 			NodeId:  p.NodeInfo().ID(),
 		})

@@ -18,10 +18,10 @@ func main() {
 	seedConfigs, nodeKey := seednode.InitConfigs()
 	var seedSwitchs []p2p.Switch
 
-	logger.Info("Starting Web Server...")
+	logger.Info("Starting Web Server on port " + seedConfigs.HttpPort)
 	http.StartWebServer(seedConfigs)
 
-	seedSwitchs = seednode.StartSeedNodes(seedConfigs, nodeKey)
+	seedSwitchs = seednode.StartSeedNodes(seedConfigs, &nodeKey)
 
 	StartGeolocServiceAndBlock(seedSwitchs)
 }
@@ -33,7 +33,7 @@ func StartGeolocServiceAndBlock(seedSwitchs []p2p.Switch) {
 		case <-ticker.C:
 			for _, sw := range seedSwitchs {
 				peers := seednode.ToSeednodePeers(sw.Peers().List())
-				geoloc.ResolveIps(peers, sw.NodeInfo().(p2p.DefaultNodeInfo).Network)
+				geoloc.ResolveIps(peers, sw.NodeInfo().Network)
 			}
 		}
 	}

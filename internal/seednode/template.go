@@ -17,84 +17,14 @@ http_port = "{{ .HttpPort }}"
 # Output level for logging: "none", info", "error", "debug". debug will enable pex and addrbook (very) verbose logs
 log_level = "{{ .LogLevel }}"
 
-# Chain specific config
-[osmosis]
-chain_id = "{{ .Osmosis.ChainId }}"
-seeds = "{{ .Osmosis.Seeds }}"
-laddr = "{{ .Osmosis.ListenAddress }}"
-
-[terra]
-chain_id = "{{ .Terra.ChainId }}"
-seeds = "{{ .Terra.Seeds }}"
-laddr = "{{ .Terra.ListenAddress }}"
-
-[bombay]
-chain_id = "{{ .Bombay.ChainId }}"
-seeds = "{{ .Bombay.Seeds }}"
-laddr = "{{ .Bombay.ListenAddress }}"
-
-[band]
-chain_id = "{{ .Band.ChainId }}"
-seeds = "{{ .Band.Seeds }}"
-laddr = "{{ .Band.ListenAddress }}"
-
-[fetchai]
-chain_id = "{{ .Fetchai.ChainId }}"
-seeds = "{{ .Fetchai.Seeds }}"
-laddr = "{{ .Fetchai.ListenAddress }}"
-
-[injective]
-chain_id = "{{ .Injective.ChainId }}"
-seeds = "{{ .Injective.Seeds }}"
-laddr = "{{ .Injective.ListenAddress }}"
-
-[persistence]
-chain_id = "{{ .Persistence.ChainId }}"
-seeds = "{{ .Persistence.Seeds }}"
-laddr = "{{ .Persistence.ListenAddress }}"
-
-[irisnet]
-chain_id = "{{ .Irisnet.ChainId }}"
-seeds = "{{ .Irisnet.Seeds }}"
-laddr = "{{ .Irisnet.ListenAddress }}"
-
-[sentinel]
-chain_id = "{{ .Sentinel.ChainId }}"
-seeds = "{{ .Sentinel.Seeds }}"
-laddr = "{{ .Sentinel.ListenAddress }}"
-
-[certik]
-chain_id = "{{ .Certik.ChainId }}"
-seeds = "{{ .Certik.Seeds }}"
-laddr = "{{ .Certik.ListenAddress }}"
-
-[lum]
-chain_id = "{{ .Lum.ChainId }}"
-seeds = "{{ .Lum.Seeds }}"
-laddr = "{{ .Lum.ListenAddress }}"
-
-[sifchain]
-chain_id = "{{ .Sifchain.ChainId }}"
-seeds = "{{ .Sifchain.Seeds }}"
-laddr = "{{ .Sifchain.ListenAddress }}"
-
-[desmos]
-chain_id = "{{ .Desmos.ChainId }}"
-seeds = "{{ .Desmos.Seeds }}"
-laddr = "{{ .Desmos.ListenAddress }}"
-
-[rizon]
-chain_id = "{{ .Rizon.ChainId }}"
-seeds = "{{ .Rizon.Seeds }}"
-laddr = "{{ .Rizon.ListenAddress }}"
-
-[konstellation]
-chain_id = "{{ .Konstellation.ChainId }}"
-seeds = "{{ .Konstellation.Seeds }}"
-laddr = "{{ .Konstellation.ListenAddress }}"
-
-[provenance]
-chain_id = "{{ .Provenance.ChainId }}"
-seeds = "{{ .Provenance.Seeds }}"
-laddr = "{{ .Provenance.ListenAddress }}"
+# Chains specific config
+chains:
+ - osmosis
+   chain_id = "osmosis-1"
+   bootstrap-peers = "seeds..."
+   laddr = "tcp://0.0.0.0:26656"
+ - terra
+   chain_id = "phoenix-1"
+   bootstrap-peers = "seeds..."
+   laddr = "tcp://0.0.0.0:26657"
 `
