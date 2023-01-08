@@ -88,9 +88,11 @@ func startSeedNode(cfg *config.P2PConfig, nodeKey *types.NodeKey) (*p2p.Switch, 
 		nodeKey.ID.AddressString(nodeInfo.ListenAddr),
 	)
 	if err != nil {
+		logger.Error("Panic for chain " + cfg.PrettyName)
 		panic(err)
 	}
 	if err := transport.Listen(p2p.NewEndpoint(addr)); err != nil {
+		logger.Error("Panic for chain " + cfg.PrettyName)
 		panic(err)
 	}
 	sw := p2p.NewSwitch(cfg.P2P, transport)
@@ -109,7 +111,8 @@ func startSeedNode(cfg *config.P2PConfig, nodeKey *types.NodeKey) (*p2p.Switch, 
 
 	err = sw.Start()
 	if err != nil {
-		logger.Error(fmt.Sprintf("Failed to start seed node for %s: %s", cfg.PrettyName, err))
+		logger.Error("Panic for chain " + cfg.PrettyName)
+		panic(err)
 	}
 
 	dialAddressBookPeers(addrBook, sw)
