@@ -29,16 +29,15 @@ type SeedNodeConfig struct {
 func StartSeedNodes(seedConfig *config.TSConfig, nodeKey *types.NodeKey) []SeedNodeConfig {
 	var seedNodes []SeedNodeConfig
 
-	for _, chain := range seedConfig.Chains {
-		if sw, cfg, addrBook := startSeedNode(&chain, nodeKey); sw != nil {
-			seedNodes = append(seedNodes, SeedNodeConfig{sw, cfg, addrBook})
+	for i := 0; i < len(seedConfig.ChainConfigs); i++ {
+		if sw, addrBook := startSeedNode(&seedConfig.ChainConfigs[i], nodeKey); sw != nil {
+			seedNodes = append(seedNodes, SeedNodeConfig{sw, &seedConfig.ChainConfigs[i], addrBook})
 		}
 	}
-
 	return seedNodes
 }
 
-func startSeedNode(cfg *config.P2PConfig, nodeKey *types.NodeKey) (*p2p.Switch, *config.P2PConfig, pex.AddrBook) {
+func startSeedNode(cfg *config.P2PConfig, nodeKey *types.NodeKey) (*p2p.Switch, pex.AddrBook) {
 	logger.Info(fmt.Sprintf("Starting Seed Node for chain %s [%s]", cfg.PrettyName, cfg.ChainId))
 
 	nodeInfo := types.NodeInfo{
@@ -122,7 +121,7 @@ func startSeedNode(cfg *config.P2PConfig, nodeKey *types.NodeKey) (*p2p.Switch, 
 		_ = pexReactor.Stop()
 	})
 
-	return sw, cfg, addrBook
+	return sw, addrBook
 }
 
 func dialAddressBookPeers(addrBook pex.AddrBook, sw *p2p.Switch) {
@@ -132,12 +131,8 @@ func dialAddressBookPeers(addrBook pex.AddrBook, sw *p2p.Switch) {
 		stringAddresses = append(stringAddresses, address.String())
 	}
 	if len(stringAddresses) == 0 {
-		logger.Info("No addresses to dial from existing address book")
 		return
 	}
 	logger.Info(fmt.Sprintf("Will dial %d random peers from existing address book", len(stringAddresses)))
-	err := sw.DialPeersAsync(stringAddresses)
-	if err != nil {
-		logger.Error("Could not dial existing seeds in address book at startup")
-	}
+	_ = sw.DialPeersAsync(stringAddresses)
 }

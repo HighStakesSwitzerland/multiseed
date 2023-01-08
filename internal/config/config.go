@@ -21,7 +21,7 @@ var (
 
 // TSConfig extends tendermint P2PConfig with the things we need
 type TSConfig struct {
-	Chains []P2PConfig `mapstructure:"chains"`
+	ChainConfigs []P2PConfig `mapstructure:"chains"`
 
 	LogLevel string `mapstructure:"log_level"`
 	HttpPort string `mapstructure:"http_port"`
@@ -117,9 +117,9 @@ func checkActiveChains(tsConfig *TSConfig) {
 
 func initDefaultConfig() TSConfig {
 	tsConfig := TSConfig{
-		Chains:   []P2PConfig{*defaultP2PConfig(0)},
-		LogLevel: "info",
-		HttpPort: "8090",
+		ChainConfigs: []P2PConfig{*defaultP2PConfig(0)},
+		LogLevel:     "info",
+		HttpPort:     "8090",
 	}
 	return tsConfig
 }

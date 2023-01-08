@@ -150,6 +150,7 @@ func LoadSavedResolvedPeers(cfg seednode.SeedNodeConfig) {
 		}
 	}
 	ResolvedPeers[cfg.Cfg.ChainId] = chain
+	logger.Info(fmt.Sprintf("Reloaded %d previously resolved peers from %s address book", len(chain.Nodes), cfg.Cfg.PrettyName))
 }
 
 func resolve(unresolvedPeers []*seednode.Peer) []GeolocalizedPeers {
@@ -256,8 +257,7 @@ func get45UnresolvedPeers(cfg seednode.SeedNodeConfig, chain string) []*seednode
 		}
 	}
 	if len(peersToResolve) < 45 {
-		// fill with unresolved peers from addressbook
-		// TODO: also get older peers that could be refreshed? Or remove them definitively?
+		// fill with unresolved peers from address book
 		knownAddresses := getRandomPeersFromAddrBook(cfg.AddrBook.GetAddrbookContent())
 		for _, address := range knownAddresses {
 			if len(address.Country) == 0 {
@@ -274,8 +274,7 @@ func get45UnresolvedPeers(cfg seednode.SeedNodeConfig, chain string) []*seednode
 			}
 		}
 	}
-	logger.Info(fmt.Sprintf("Exit from get45UnresolvedPeers with %d peers", len(peersToResolve)))
-	return peersToResolve
+	return peersToResolve // may be 0 size list if nothing new from pex reactor
 }
 
 func isResolved(peer seednode.Peer, chain string) bool {
