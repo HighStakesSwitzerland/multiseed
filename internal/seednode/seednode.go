@@ -109,7 +109,7 @@ func startSeedNode(cfg *config.P2PConfig, nodeKey *types.NodeKey) (*p2p.Switch, 
 
 	err = sw.Start()
 	if err != nil {
-		panic(err)
+		logger.Error(fmt.Sprintf("Failed to start seed node for %s: %s", cfg.PrettyName, err))
 	}
 
 	dialAddressBookPeers(addrBook, sw)
