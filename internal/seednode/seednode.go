@@ -9,6 +9,7 @@ import (
 	tmstrings "github.com/HighStakesSwitzerland/tendermint/libs/strings"
 	"github.com/HighStakesSwitzerland/tendermint/types"
 	"github.com/HighStakesSwitzerland/tendermint/version"
+	"github.com/highstakesswitzerland/multiseed/internal/config"
 	"github.com/mitchellh/go-homedir"
 	"path/filepath"
 	"time"
@@ -21,11 +22,11 @@ var (
 
 type SeedNodeConfig struct {
 	Sw       *p2p.Switch
-	Cfg      *P2PConfig
+	Cfg      *config.P2PConfig
 	AddrBook pex.AddrBook
 }
 
-func StartSeedNodes(seedConfig *TSConfig, nodeKey *types.NodeKey) []SeedNodeConfig {
+func StartSeedNodes(seedConfig *config.TSConfig, nodeKey *types.NodeKey) []SeedNodeConfig {
 	var seedNodes []SeedNodeConfig
 
 	for _, chain := range seedConfig.Chains {
@@ -37,7 +38,7 @@ func StartSeedNodes(seedConfig *TSConfig, nodeKey *types.NodeKey) []SeedNodeConf
 	return seedNodes
 }
 
-func startSeedNode(cfg *P2PConfig, nodeKey *types.NodeKey) (*p2p.Switch, *P2PConfig, pex.AddrBook) {
+func startSeedNode(cfg *config.P2PConfig, nodeKey *types.NodeKey) (*p2p.Switch, *config.P2PConfig, pex.AddrBook) {
 	logger.Info(fmt.Sprintf("Starting Seed Node for chain %s [%s]", cfg.PrettyName, cfg.ChainId))
 
 	nodeInfo := types.NodeInfo{
@@ -115,6 +116,7 @@ func startSeedNode(cfg *P2PConfig, nodeKey *types.NodeKey) (*p2p.Switch, *P2PCon
 	dialAddressBookPeers(addrBook, sw)
 	tmos.TrapSignal(logger, func() {
 		logger.Info("Shutting down chain " + cfg.PrettyName)
+		addrBook.Save()
 		_ = addrBook.Stop()
 		_ = sw.Stop()
 		_ = pexReactor.Stop()
@@ -133,7 +135,7 @@ func dialAddressBookPeers(addrBook pex.AddrBook, sw *p2p.Switch) {
 		logger.Info("No addresses to dial from existing address book")
 		return
 	}
-	logger.Info(fmt.Sprintf("Will dial %d peers from existing address book", len(stringAddresses)))
+	logger.Info(fmt.Sprintf("Will dial %d random peers from existing address book", len(stringAddresses)))
 	err := sw.DialPeersAsync(stringAddresses)
 	if err != nil {
 		logger.Error("Could not dial existing seeds in address book at startup")

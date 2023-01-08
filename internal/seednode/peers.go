@@ -27,11 +27,18 @@ func p2pPeersToPeerList(list []p2p.Peer) []*Peer {
 	for _, p := range list {
 		_peers = append(_peers, &Peer{
 			Moniker:  p.NodeInfo().Moniker,
-			LastSeen: time.Now().Add(-p.Status().Duration), //TODO: unsure this is accurate
+			LastSeen: time.Now().Add(-p.Status().Duration),
 			IP:       p.SocketAddr().IP,
 			Port:     p.SocketAddr().Port,
 			NodeId:   p.NodeInfo().ID(),
 		})
 	}
 	return _peers
+}
+
+func SaveLastSeenAttrInAddrbook(config SeedNodeConfig) {
+	for _, peer := range config.Sw.Peers().List() {
+		config.Sw.MarkPeerAsGood(peer)
+	}
+	config.AddrBook.Save()
 }

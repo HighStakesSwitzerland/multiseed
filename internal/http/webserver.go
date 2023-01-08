@@ -4,8 +4,8 @@ import (
 	"embed"
 	"encoding/json"
 	"github.com/HighStakesSwitzerland/tendermint/libs/log"
+	"github.com/highstakesswitzerland/multiseed/internal/config"
 	"github.com/highstakesswitzerland/multiseed/internal/geoloc"
-	"github.com/highstakesswitzerland/multiseed/internal/seednode"
 	"net/http"
 )
 
@@ -18,7 +18,7 @@ type WebResources struct {
 	Files map[string]string
 }
 
-func StartWebServer(seedConfig *seednode.TSConfig) {
+func StartWebServer(seedConfig *config.TSConfig) {
 	// serve endpoint
 	http.HandleFunc("/api/peers", writePeers)
 
@@ -33,6 +33,7 @@ func StartWebServer(seedConfig *seednode.TSConfig) {
 }
 
 func writePeers(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Access-Control-Allow-Origin", "*")
 	marshal, err := json.Marshal(&geoloc.ResolvedPeers)
 	if err != nil {
 		logger.Info("Failed to marshal peers list")

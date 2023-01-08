@@ -1,4 +1,4 @@
-package seednode
+package config
 
 const defaultConfigTemplate = `# This is a TOML config file.
 # For more information, see https://github.com/toml-lang/toml

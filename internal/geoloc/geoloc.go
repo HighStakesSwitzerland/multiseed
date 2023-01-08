@@ -120,7 +120,7 @@ func ResolveIps(cfg seednode.SeedNodeConfig) {
 		}
 	}
 	ResolvedPeers[chainId] = chain
-	logger.Info(fmt.Sprintf("We have %d total resolved peers for chain %s", len(ResolvedPeers), cfg.Cfg.PrettyName))
+	logger.Info(fmt.Sprintf("We have %d total resolved peers for chain %s", len(ResolvedPeers[chainId].Nodes), cfg.Cfg.PrettyName))
 }
 
 func LoadSavedResolvedPeers(cfg seednode.SeedNodeConfig) {
@@ -274,6 +274,7 @@ func get45UnresolvedPeers(cfg seednode.SeedNodeConfig, chain string) []*seednode
 			}
 		}
 	}
+	logger.Info(fmt.Sprintf("Exit from get45UnresolvedPeers with %d peers", len(peersToResolve)))
 	return peersToResolve
 }
 
@@ -296,25 +297,30 @@ func findPeerInList(ipServiceResponse ipServiceResponse, peer []*seednode.Peer) 
 }
 
 func getRandomPeersFromAddrBook(addrbook []*pex.KnownAddress) []*pex.KnownAddress {
-	bookSize := len(addrbook)
 	// XXX: instead of making a list of all addresses, shuffling, and slicing a random chunk,
 	// could we just select a random numAddresses of indexes?
-	allAddr := make([]*pex.KnownAddress, bookSize)
-	i := 0
+	allAddr := make([]*pex.KnownAddress, 0)
 	for _, ka := range addrbook {
-		allAddr[i] = ka
-		i++
+		if ka.LastSuccess.Year() == 1 {
+			continue // ignore peers we have never connected to
+		}
+		allAddr = append(allAddr, ka)
 	}
 
 	// Fisher-Yates shuffle the array. We only need to do the first
 	// `numAddresses' since we are throwing the rest.
-	for i := 0; i < 45; i++ {
+	len := len(allAddr)
+	for i := 0; i < len; i++ {
 		// pick a number between current index and the end
 		// nolint:gosec // G404: Use of weak random number generator
-		j := mrand.Intn(len(allAddr)-i) + i
+		j := mrand.Intn(len-i) + i
 		allAddr[i], allAddr[j] = allAddr[j], allAddr[i]
 	}
 
 	// slice off the limit we are willing to share.
-	return allAddr[:45]
+	max := len
+	if len > 45 {
+		max = 45
+	}
+	return allAddr[:max]
 }

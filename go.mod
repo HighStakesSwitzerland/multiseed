@@ -3,7 +3,7 @@ go 1.18
 module github.com/highstakesswitzerland/multiseed
 
 require (
-	github.com/HighStakesSwitzerland/tendermint v0.35.15-hss
+	github.com/HighStakesSwitzerland/tendermint v0.35.16-hss
 	github.com/mitchellh/go-homedir v1.1.0
 )
 
@@ -71,3 +71,5 @@ require (
 	golang.org/x/net v0.0.0-20220617184016-355a448f1bc9 // indirect
 	golang.org/x/sys v0.0.0-20220702020025-31831981b65f // indirect
 )
+
+//replace github.com/HighStakesSwitzerland/tendermint => C:\Users\petro\IdeaProjects\go-workspace\tendermint

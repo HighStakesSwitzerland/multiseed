@@ -1,9 +1,10 @@
-package seednode
+package config
 
 import (
 	"bytes"
 	"fmt"
 	"github.com/HighStakesSwitzerland/tendermint/config"
+	"github.com/HighStakesSwitzerland/tendermint/libs/log"
 	"github.com/HighStakesSwitzerland/tendermint/types"
 	"github.com/mitchellh/go-homedir"
 	"github.com/spf13/viper"
@@ -12,6 +13,10 @@ import (
 	"reflect"
 	"strings"
 	"text/template"
+)
+
+var (
+	logger = log.MustNewDefaultLogger("text", "info", false)
 )
 
 // TSConfig extends tendermint P2PConfig with the things we need

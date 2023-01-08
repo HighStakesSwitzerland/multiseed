@@ -2,6 +2,7 @@ package main
 
 import (
 	"github.com/HighStakesSwitzerland/tendermint/libs/log"
+	"github.com/highstakesswitzerland/multiseed/internal/config"
 	"github.com/highstakesswitzerland/multiseed/internal/geoloc"
 	"github.com/highstakesswitzerland/multiseed/internal/http"
 	"github.com/highstakesswitzerland/multiseed/internal/seednode"
@@ -14,7 +15,7 @@ var (
 )
 
 func main() {
-	seedConfigs, nodeKey := seednode.InitConfigs()
+	seedConfigs, nodeKey := config.InitConfigs()
 	var seedSwitchs []seednode.SeedNodeConfig
 
 	logger.Info("Starting Web Server on port " + seedConfigs.HttpPort)
@@ -22,8 +23,8 @@ func main() {
 
 	seedSwitchs = seednode.StartSeedNodes(seedConfigs, &nodeKey)
 
-	for _, config := range seedSwitchs {
-		geoloc.LoadSavedResolvedPeers(config)
+	for _, cfg := range seedSwitchs {
+		geoloc.LoadSavedResolvedPeers(cfg)
 	}
 	StartGeolocServiceAndBlock(seedSwitchs)
 }
@@ -34,6 +35,7 @@ func StartGeolocServiceAndBlock(seedNodes []seednode.SeedNodeConfig) {
 		select {
 		case <-ticker.C:
 			for _, seedNodeConfig := range seedNodes {
+				seednode.SaveLastSeenAttrInAddrbook(seedNodeConfig) // update LastSeen values in address book at it is not done automatically on seed mode reactor
 				geoloc.ResolveIps(seedNodeConfig)
 			}
 		}
