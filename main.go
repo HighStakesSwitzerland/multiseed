@@ -11,7 +11,7 @@ import (
 
 var (
 	logger = log.MustNewDefaultLogger("text", "info", false)
-	ticker = time.NewTicker(60 * time.Second) // should stay 60 sec to match the ip-api service rate limit
+	ticker = time.NewTicker(300 * time.Second) // should staymin 60 sec to match the ip-api service rate limit
 )
 
 func main() {

@@ -55,14 +55,14 @@ func startSeedNode(cfg *config.P2PConfig, nodeKey *types.NodeKey) (*p2p.Switch, 
 	}
 
 	// set conn settings
-	cfg.P2P.RecvRate = 5120000
-	cfg.P2P.SendRate = 5120000
+	cfg.P2P.RecvRate = 512000
+	cfg.P2P.SendRate = 512000
 	cfg.P2P.MaxPacketMsgPayloadSize = 1024
-	cfg.P2P.FlushThrottleTimeout = 100 * time.Millisecond
+	cfg.P2P.FlushThrottleTimeout = 120 * time.Second
 	cfg.P2P.AllowDuplicateIP = true
 	cfg.P2P.DialTimeout = 30 * time.Second
 	cfg.P2P.HandshakeTimeout = 20 * time.Second
-	cfg.P2P.MaxNumInboundPeers = 2048
+	cfg.P2P.MaxNumInboundPeers = 4096
 
 	userHomeDir, _ := homedir.Dir()
 	addrBookFilePath := filepath.Join(userHomeDir, ".multiseed", "addrbook-"+cfg.ChainId+".json")
@@ -71,8 +71,8 @@ func startSeedNode(cfg *config.P2PConfig, nodeKey *types.NodeKey) (*p2p.Switch, 
 	pexReactor := pex.NewReactor(addrBook, &pex.ReactorConfig{
 		SeedMode:                     true,
 		Seeds:                        tmstrings.SplitAndTrim(cfg.P2P.BootstrapPeers, ",", " "),
-		SeedDisconnectWaitPeriod:     5 * time.Minute, // default is 28 hours, we just want to harvest as many addresses as possible
-		PersistentPeersMaxDialPeriod: 5 * time.Minute, // use exponential back-off
+		SeedDisconnectWaitPeriod:     15 * time.Minute, // default is 28 hours, we just want to harvest as many addresses as possible
+		PersistentPeersMaxDialPeriod: 15 * time.Minute, // use exponential back-off
 	})
 	// TODO: CAN ask for addresses
 	// pexReactor.ReceiveAddrs()
