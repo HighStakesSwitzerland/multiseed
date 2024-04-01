@@ -104,8 +104,8 @@ func checkActiveChains(tsConfig *TSConfig) {
 	value := reflect.Indirect(reflect.ValueOf(tsConfig))
 	for i := 0; i < len(names); i++ {
 		chain := value.FieldByName(names[i]).Interface()
-		if reflect.TypeOf(chain) == reflect.TypeOf([]P2PConfig{}) {
-			chainCfg := chain.([]P2PConfig)
+		if reflect.TypeOf(chain) == reflect.TypeOf(P2PConfig{}) {
+			chainCfg := chain.(P2PConfig)
 			if chainCfg.ChainId == "" || chainCfg.P2P.BootstrapPeers == "" {
 				logger.Info(fmt.Sprintf("%s config is incomplete, this chain will not be used", names[i]))
 			} else {
